@@ -2,14 +2,12 @@ package org.sphalerite.samplefinger;
 
 import java.io.IOException;
 import java.net.SocketException;
-import java.util.ArrayList;
 
 import com.leapmotion.leap.Controller;
 import com.leapmotion.leap.Finger;
 import com.leapmotion.leap.Frame;
 import com.leapmotion.leap.Hand;
 import com.leapmotion.leap.Listener;
-import com.leapmotion.leap.Vector;
 
 class SampleFingerController extends Listener {
 	private PureDataMessenger messenger;
@@ -18,7 +16,7 @@ class SampleFingerController extends Listener {
 		messenger = new PureDataMessenger();
 	}
 	
-	private final double CONTACT_THRESHOLD = 30.0;
+	private final double CONTACT_THRESHOLD = 18.0;
 	
 	private boolean areTouched(Finger a, Finger b) {
 		return a.tipPosition().distanceTo(b.tipPosition()) < CONTACT_THRESHOLD;
@@ -49,28 +47,30 @@ class SampleFingerController extends Listener {
 	}
 
 	private int[][] contactFrameCount = new int[5][5];
-	private final int IGNORE_CONTACT_THRESHOLD = 2;
 	private void processContact(Finger rightFinger, Finger leftFinger) {
 		int rightIndex = rightFinger.type().ordinal(),
 		    leftIndex = leftFinger.type().ordinal();
-		if (areTouched(rightFinger, leftFinger)) {
-			contactFrameCount[rightIndex][leftIndex]++;
+		boolean touching = areTouched(rightFinger, leftFinger); 
+		if (touching) {
+			if (contactFrameCount[rightIndex][leftIndex] < 20) contactFrameCount[rightIndex][leftIndex]++;
 		} else {
-			if (contactFrameCount[rightIndex][leftIndex] > IGNORE_CONTACT_THRESHOLD) {
-				switch(leftFinger.type()) {
-				case TYPE_THUMB: record(rightIndex); break;
+			if (contactFrameCount[rightIndex][leftIndex] > 0) contactFrameCount[rightIndex][leftIndex]--;
+			if (contactFrameCount[rightIndex][leftIndex] == 10) {
+				//System.out.println(rightIndex + " " + leftIndex + " " + contactFrameCount[rightIndex][leftIndex]);
+				switch (leftFinger.type()) {
 				case TYPE_INDEX: nextMode(rightIndex); break;
+				case TYPE_THUMB: record(rightIndex); break;
 				case TYPE_MIDDLE: toggleLock(rightIndex); break;
 				default: break;
 				}
 			}
-			contactFrameCount[rightIndex][leftIndex] = 0;
 		}
 	}
 
 	private boolean locked[] = {true, true, true, true, true};
 	private void toggleLock(int fingerIndex) {
 		locked[fingerIndex] = !locked[fingerIndex];
+		System.out.println("Lock " + fingerIndex + ": " + locked[fingerIndex]);
 	}
 
 	private SampleMode[] sampleModes = {SampleMode.OFF,
@@ -79,18 +79,20 @@ class SampleFingerController extends Listener {
 										SampleMode.OFF,
 										SampleMode.OFF };
 	private void nextMode(int fingerIndex) {
-		SampleMode next = SampleMode.OFF;
+		SampleMode next = SampleMode.LOOP;
 		switch(sampleModes[fingerIndex]) {
-		case OFF: next = SampleMode.LOOP;
-		case LOOP: next = SampleMode.SCRUB;
-		case SCRUB: next = SampleMode.OFF;
+		case OFF: next = SampleMode.LOOP; break;
+		case LOOP: next = SampleMode.SCRUB; break;
+		case SCRUB: next = SampleMode.OFF; break;
 		}
 		messenger.send("mode " + fingerIndex + " " + next.toString());
+		System.out.println("Sample " + fingerIndex + " in mode " + next);
 		sampleModes[fingerIndex] = next;
 	}
 
 	private void record(int fingerIndex) {
 		messenger.send("record " + fingerIndex);
+		System.out.println("Recording sample " + fingerIndex);
 	}
 	
 
@@ -98,7 +100,7 @@ class SampleFingerController extends Listener {
         Listener listener = new SampleFingerController();
         Controller controller = new Controller();
         controller.addListener(listener);
-        System.out.print("Hello");
+        System.out.println("Ready!");
         try {
 			System.in.read();
 		} catch (IOException e) {
