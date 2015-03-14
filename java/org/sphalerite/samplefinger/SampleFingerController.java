@@ -18,12 +18,13 @@ class SampleFingerController extends Listener {
 		messenger = new PureDataMessenger();
 	}
 	
-	private boolean areTouched(Vector a, Vector b) {
-		return a.distanceTo(b) < 10.0;
+	private final double CONTACT_THRESHOLD = 30.0;
+	
+	private boolean areTouched(Finger a, Finger b) {
+		return a.tipPosition().distanceTo(b.tipPosition()) < CONTACT_THRESHOLD;
 	}
 	
 	public void onFrame(Controller c) {
-		ArrayList<FingerWrap> fingers = new ArrayList<FingerWrap>();
 		Frame f = c.frame();
 		Hand rightHand = null, leftHand = null;
 		for (Hand hand : f.hands()) {
@@ -39,18 +40,31 @@ class SampleFingerController extends Listener {
 		for (Finger rightFinger : rightHand.fingers()) {
 			int fingerIndex = rightFinger.type().ordinal();
 			for (Finger leftFinger : leftHand.fingers()) {
-				if (areTouched(rightFinger.tipPosition(), leftFinger.tipPosition())) {
-					switch(leftFinger.type()) {
-					case TYPE_THUMB: record(fingerIndex); break;
-					case TYPE_INDEX: nextMode(fingerIndex); break;
-					case TYPE_MIDDLE: toggleLock(fingerIndex); break;
-					default: break;
-					}
-				}
+				processContact(rightFinger, leftFinger);
 			}
 			if (!locked[fingerIndex]) {
 				messenger.send("scrub " + fingerIndex + " " + rightFinger.tipPosition().getY());
 			}
+		}
+	}
+
+	private int[][] contactFrameCount = new int[5][5];
+	private final int IGNORE_CONTACT_THRESHOLD = 2;
+	private void processContact(Finger rightFinger, Finger leftFinger) {
+		int rightIndex = rightFinger.type().ordinal(),
+		    leftIndex = leftFinger.type().ordinal();
+		if (areTouched(rightFinger, leftFinger)) {
+			contactFrameCount[rightIndex][leftIndex]++;
+		} else {
+			if (contactFrameCount[rightIndex][leftIndex] > IGNORE_CONTACT_THRESHOLD) {
+				switch(leftFinger.type()) {
+				case TYPE_THUMB: record(rightIndex); break;
+				case TYPE_INDEX: nextMode(rightIndex); break;
+				case TYPE_MIDDLE: toggleLock(rightIndex); break;
+				default: break;
+				}
+			}
+			contactFrameCount[rightIndex][leftIndex] = 0;
 		}
 	}
 
