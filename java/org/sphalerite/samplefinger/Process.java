@@ -1,14 +1,13 @@
 package org.sphalerite.samplefinger;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.io.*;
-import java.net.*;
+import java.net.SocketException;
+
+import com.leapmotion.leap.Vector;
 
 class Process {
 	
 	private boolean areTouched(Vector a, Vector b) {
-		return a.distanceFrom(b) < 1.0;
+		return a.distanceTo(b) < 1.0;
 	}
 
 
