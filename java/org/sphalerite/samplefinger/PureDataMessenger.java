@@ -17,6 +17,7 @@ class PureDataMessenger
 	}
   
     public boolean send(String message) {
+    	System.out.println(message);
     	byte[] sendData = (message + "\n").getBytes();
     	DatagramPacket packet = new DatagramPacket(sendData, sendData.length, addr, 9001);
     	try {
