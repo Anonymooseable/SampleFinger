@@ -17,6 +17,7 @@ class SampleFingerController extends Listener {
 	}
 	
 	private final double CONTACT_THRESHOLD = 18.0;
+	private final double CROSSING_THRESHOLD = 18.0;
 	
 	private boolean areTouched(Finger a, Finger b) {
 		return a.tipPosition().distanceTo(b.tipPosition()) < CONTACT_THRESHOLD;
@@ -25,6 +26,10 @@ class SampleFingerController extends Listener {
 	private final double HAND_CONTACT_THRESHOLD = 30.0;
 	private boolean areTouched(Finger a, Hand b) {
 		return a.tipPosition().distanceTo(b.palmPosition()) < HAND_CONTACT_THRESHOLD;
+	}
+	
+	private boolean areCrossed(Hand a, Hand b) {
+		return (a.palmPosition().distanceTo(b.palmPosition()) > CROSSING_THRESHOLD && a.palmPosition.getX() > b.palmPosition.getY());
 	}
 
 	public void onFrame(Controller c) {
@@ -48,6 +53,22 @@ class SampleFingerController extends Listener {
 			}
 			if (!locked[fingerIndex]) {
 				messenger.send("scrub " + fingerIndex + " " + rightFinger.tipPosition().getY());
+			}
+		}
+		if (areCrossed(leftHand, rightHand)) {
+			processCrossing(leftHand, rightHand);
+		}
+	}
+	
+	private int crossingFrameCount;
+	private void processCrossing(Hand leftHand, Hand rightHand) {
+		boolean crossing = areCrosssed(leftHand, righHand); 
+		if (crossing) {
+			if (crossingFrameCount < 20) crossingFrameCount++;
+		} else {
+			if (crossingFrameCount > 0) crossingFrameCount--;
+			if (crossingFrameCount == 10) {
+				messenger.send("reset");
 			}
 		}
 	}
