@@ -22,6 +22,11 @@ class SampleFingerController extends Listener {
 		return a.tipPosition().distanceTo(b.tipPosition()) < CONTACT_THRESHOLD;
 	}
 	
+	private final double HAND_CONTACT_THRESHOLD = 30.0;
+	private boolean areTouched(Finger a, Hand b) {
+		return a.tipPosition().distanceTo(b.palmPosition()) < HAND_CONTACT_THRESHOLD;
+	}
+
 	public void onFrame(Controller c) {
 		Frame f = c.frame();
 		Hand rightHand = null, leftHand = null;
@@ -37,6 +42,7 @@ class SampleFingerController extends Listener {
 		}
 		for (Finger rightFinger : rightHand.fingers()) {
 			int fingerIndex = rightFinger.type().ordinal();
+			processContact(rightFinger, leftHand);
 			for (Finger leftFinger : leftHand.fingers()) {
 				processContact(rightFinger, leftFinger);
 			}
@@ -56,7 +62,6 @@ class SampleFingerController extends Listener {
 		} else {
 			if (contactFrameCount[rightIndex][leftIndex] > 0) contactFrameCount[rightIndex][leftIndex]--;
 			if (contactFrameCount[rightIndex][leftIndex] == 10) {
-				//System.out.println(rightIndex + " " + leftIndex + " " + contactFrameCount[rightIndex][leftIndex]);
 				switch (leftFinger.type()) {
 				case TYPE_INDEX: nextMode(rightIndex); break;
 				case TYPE_THUMB: record(rightIndex); break;
@@ -64,6 +69,14 @@ class SampleFingerController extends Listener {
 				default: break;
 				}
 			}
+		}
+	}
+
+	private void processContact(Finger rightFinger, Hand hand) {
+		int rightIndex = rightFinger.type().ordinal();
+		boolean touching = areTouched(rightFinger, hand); 
+		if (touching) {
+			messenger.send("volume " + rightIndex + " " + hand.palmVelocity().getY());
 		}
 	}
 
