@@ -126,6 +126,20 @@ class SampleFingerController extends Listener {
 		System.out.println("Recording sample " + fingerIndex);
 	}
 	
+	public void onConnect(Controller c) {
+		System.out.println("Connected.");
+	}
+	
+	public void onDeviceChange(Controller c) {
+		System.out.println("Device change");
+	}
+	
+	public void onDisconnect(Controller c) {
+		System.out.println("Disconnect");
+	}
+	
+	
+	
 
 	public static void main(String[] args) throws SocketException {
         Listener listener = new SampleFingerController();
