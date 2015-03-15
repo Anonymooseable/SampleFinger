@@ -16,7 +16,7 @@ class SampleFingerController extends Listener {
 		messenger = new PureDataMessenger();
 	}
 	
-	private final double CONTACT_THRESHOLD = 18.0;	
+	private final double CONTACT_THRESHOLD = 23.0;	
 	private boolean areTouched(Finger a, Finger b) {
 		return a.tipPosition().distanceTo(b.tipPosition()) < CONTACT_THRESHOLD;
 	}
@@ -44,8 +44,12 @@ class SampleFingerController extends Listener {
 		if (rightHand == null) {
 			return;
 		}
+		Finger thumb = null;
 		for (Finger rightFinger : rightHand.fingers()) {
 			int fingerIndex = rightFinger.type().ordinal();
+			if (fingerIndex == 0) {
+				thumb = rightFinger;
+			}
 			processContact(rightFinger, leftHand);
 			for (Finger leftFinger : leftHand.fingers()) {
 				processContact(rightFinger, leftFinger);
@@ -55,6 +59,25 @@ class SampleFingerController extends Listener {
 			}
 		}
 		processCrossing(leftHand, rightHand);
+		if (thumb != null) {
+			for (Finger rightFinger : rightHand.fingers())
+				processSingleContact(thumb, rightFinger);
+		}
+	}
+	
+	private int[] contactFrameCountSingle = new int[5];
+	private void processSingleContact(Finger thumb, Finger other) {
+		int index = other.type().ordinal();
+		boolean touching = areTouched(thumb, other); 
+		if (touching) {
+			if (contactFrameCountSingle[index] < 20) contactFrameCountSingle[index]++;
+		} else {
+			if (contactFrameCountSingle[index] > 0) contactFrameCountSingle[index]--;
+			if (contactFrameCountSingle[index] == 10) {
+				System.out.println("load " + index + " bagpipes-start.wav");
+				messenger.send("load " + index + " bagpipes-start.wav");
+			}
+		}
 	}
 	
 	private int crossingFrameCount;
